@@ -1,4 +1,4 @@
-name = ESDH Doc Field
+name = OS2Web ESDH Doc Field
 description = Field which display a document from the pws webservice.
 package = OS2Web - AcadreCM
 core = 7.x
