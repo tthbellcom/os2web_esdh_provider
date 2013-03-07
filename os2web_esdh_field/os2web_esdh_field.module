@@ -116,30 +116,34 @@ function os2web_esdh_field_field_validate($entity_type, $entity, $field, $instan
   foreach ($items as $delta => $item) {
 
     // Validate all esdh case fields
-    $cases = explode(',', $item['os2web_esdh_field_case_ident']);
-    foreach ($cases as $value) {
-      $value = trim($value);
-      // Adopt this for further testing.
-      $valid = preg_match('/^\d{2,4}[-,\/]\d{1,20}$/', $value);
-      if (!$valid && ($value != '')) {
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'Ugyldig fremstilling af sags-id. Sags-id skal være på formen år/nummer eller år-nummer. Flere sager skal være adskilt af , (komma).',
-          'message' => t('%name: illegal value.', array('%name' => $instance['label'])),
-        );
+    if (isset($item['os2web_esdh_field_case_ident'])) {
+      $cases = explode(',', $item['os2web_esdh_field_case_ident']);
+      foreach ($cases as $value) {
+        $value = trim($value);
+        // Adopt this for further testing.
+        $valid = preg_match('/^\d{2,4}[-,\/]\d{1,20}$/', $value);
+        if (!$valid && ($value != '')) {
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'Ugyldig fremstilling af sags-id. Sags-id skal være på formen år/nummer eller år-nummer. Flere sager skal være adskilt af , (komma).',
+            'message' => t('%name: illegal value.', array('%name' => $instance['label'])),
+          );
+        }
       }
     }
 
-    // Validate all esdh doc fields
-    $docids = explode(',', $item['os2web_esdh_field_doc_ident']);
-    foreach ($docids as $docid) {
-      $docid = trim($docid);
-      // Adopt this for further testing.
-      $valid = preg_match('/^\d{1,20}[-,\/]\d{2}$/', $docid);
-      if (!$valid && ($docid != '')) {
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'Ugyldig fremstilling af dokument-id. Dokument-id skal være på formen nummer/år eller nummer-år. Flere dokumenter skal være adskildt af , (komma).',
-          'message' => t('%name: illegal value.', array('%name' => $instance['label'])),
-        );
+    if (isset($item['os2web_esdh_field_doc_ident'])) {
+      // Validate all esdh doc fields
+      $docids = explode(',', $item['os2web_esdh_field_doc_ident']);
+      foreach ($docids as $docid) {
+        $docid = trim($docid);
+        // Adopt this for further testing.
+        $valid = preg_match('/^\d{1,20}[-,\/]\d{2}$/', $docid);
+        if (!$valid && ($docid != '')) {
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'Ugyldig fremstilling af dokument-id. Dokument-id skal være på formen nummer/år eller nummer-år. Flere dokumenter skal være adskildt af , (komma).',
+            'message' => t('%name: illegal value.', array('%name' => $instance['label'])),
+          );
+        }
       }
     }
   }
