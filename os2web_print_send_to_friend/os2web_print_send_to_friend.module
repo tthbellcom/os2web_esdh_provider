@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * OS2Web_Print_Send_to_Friend
+ *
+ * PHP version 5
+ *
+ * @category OS2Web
+ * @package  OS2Web_Print_Send_to_Friend
+ * @author   Stanislav Kutasevits <stan@bellcom.dk>
+ * @license  http://www.gnu.org/licenses/gpl-2.0.html GNU General Public License, version 2
+ * @link     http://bellcom.dk
+ */
+
+/**
+ * Implementation of hook_menu().
+ *
+ * @return array of links.
+ */
+function os2web_print_send_to_friend_menu() {
+  $items = array();
+
+  $items['dagsorden_punkt/%/print'] = array(
+    'title' => 'Print Dagsorden Punkt',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'os2web_print_send_to_friend_print_bullet_point',
+    'page arguments' => array(1),
+    'access arguments' => array(1),
+    'access callback' => 'os2web_print_send_to_friend_bullet_point_access',
+  );
+
+  $items['dagsorden_punkt/%/send_to_friend_form'] = array(
+    'title' => 'Send dagsorden punkt til venner',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'os2web_print_send_to_friend_send_to_friend_form',
+    'page arguments' => array(1),
+    'access arguments' => array(1),
+    'access callback' => 'os2web_print_send_to_friend_bullet_point_access',
+  );
+
+  $items['dagsorden_punkt/%/send_to_friend_service'] = array(
+    'title' => 'Dagsorden Punkt Send til venner',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'os2web_print_send_to_friend_send_to_friend',
+    'page arguments' => array(1),
+    'access arguments' => array(1),
+    'access callback' => 'os2web_print_send_to_friend_bullet_point_access',
+  );
+
+  return $items;
+}
+
+/**
+ * Creates a light version of the bullet point for printing
+ *
+ * @param int $bullet_point_id bullet point id
+ *
+ */
+function os2web_print_send_to_friend_print_bullet_point($bullet_point_id) {
+  $bullet_point = node_load($bullet_point_id);
+  if (strcmp($bullet_point->type, 'bullet_point') == 0) {
+    $html = '<h1>' . $bullet_point->title . '</h1>';
+
+    foreach ($bullet_point->field_ref_attachment['und'] as $attachment_id) {
+      $attachment = node_load($attachment_id['target_id']);
+      $html .= '<h3>' . $attachment->title . '</h3>';
+      $html .= $attachment->field_bpa_body['und'][0]['value'];
+    }
+  }
+  return ('<div class="node" id="content">' . $html . '</div>');
+}
+
+/**
+ * Creates a form that allows to send the content of the bullet point to an email addess.
+ *
+ * @param int $bullet_point_id bullet point id
+ *
+ */
+function os2web_print_send_to_friend_send_to_friend_form($bullet_point_id) {
+  //adding css that tweaks the elements for the modal window
+  drupal_add_css(drupal_get_path('module', 'os2web_print_send_to_friend') . '/css/os2web_print_send_to_friend.css');
+
+  drupal_add_js(drupal_get_path('module', 'os2web_print_send_to_friend') . '/js/os2web_print_send_to_friend.js');
+
+  $html = t('Fill out the fields below and press "Send", when you want to send the e-mail');
+  $html .= '<form id="send_to_friend_form">';
+  $html .= '<label>' . t('Your name') . ':</label><input type="text" name="name" />';
+  $html .= '<label>' . t('Message') . ':</label><textarea name="message"> </textarea>';
+  $html .= '<label>' . t('Recipients email') . ':</label><input type="text" name="email" id="field_send_to_friend_email" />';
+  $html .= '<input type="hidden" name="base_url" value="' . $GLOBALS['base_url'] . '" />';
+  $html .= '<input type="hidden" name="bullet_point_id" id="field_bullet_point_id" value="' . $bullet_point_id . '" />';
+  $html .= '<button type="submit" id="btn_send_to_friend">Send</button>';
+  $html .= '<div class="throbber"></div>';
+  $html .= '</form>';
+
+  return '<div class="bullet-point-send-to-friend-form ajax-progress">' . $html . '</div>';
+}
+
+function os2web_print_send_to_friend_bullet_point_access($bullet_point_id) {
+  $bullet_point = node_load($bullet_point_id);
+
+  if (strcmp($bullet_point->type, 'bullet_point') == 0) {
+    if ($bullet_point->field_bul_point_closed['und'][0]['value'])
+      return TRUE;
+    else
+      return FALSE;
+  }
+  return FALSE;
+}
+
+/**
+ * Does the actual sending to the provided email
+ *
+ * @param int    $bullet_point_id bullet point id
+ * @patam string $email           email
+ *
+ */
+function os2web_print_send_to_friend_send_to_friend($bullet_point_id) {
+  $query = new EntityFieldQuery();
+  $result = array_pop($query->entityCondition('entity_type', 'node')
+          ->propertyCondition('type', 'meeting')
+          ->fieldCondition('field_ref_bullet_points', 'target_id', $bullet_point_id, '=')
+          ->execute());
+  $meeting_id = (int) is_array($result) ? array_pop($result)->nid : null;
+
+  $bullet_point = node_load($bullet_point_id);
+  $subject = 'Dagsorden Punkt: ' . $bullet_point->title;
+
+  $body = "Hej \n\n" . $_POST['name'] . " har sendt dig et dagsordenspunkt. \n\n";
+
+  if (is_numeric($meeting_id)) {
+    $url = url('node/' . $meeting_id, array('absolute' => TRUE));
+    $body .= 'Mødet hvor punktet indgår, kan ses på ' . $url . "\n\n";
+  }
+
+  $body .= "Med beskeden:\n" . trim($_POST['message']) . "\n\n";
+
+  $body .= os2web_print_send_to_friend_print_bullet_point($bullet_point_id);
+
+  $from = variable_get('system_mail');
+  $message = array(
+    'id' => 'send_to_friend_',
+    'to' => 'jm@bellcom.dk',
+    'subject' => $subject,
+    'body' => array($body),
+    'headers' => array(
+      'From' => $from,
+      'Sender' => $from,
+      'Return-Path' => $from,
+      'Content-Type' => 'text/plain; charset=UTF-8;',
+      'Content-Transfer-Encoding' => '8Bit',
+    ),
+  );
+  $system = drupal_mail_system("os2web_print_send_to_friend", "");
+
+  // The format function must be called before calling the mail function.
+  $message = $system->format($message);
+
+  $system->mail($message);
+}
