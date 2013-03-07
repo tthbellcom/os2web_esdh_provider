@@ -1,5 +1,5 @@
-name = OS2Web ESDH Case Field
-description = Field which display a case from the pws webservice.
+name = OS2Web ESDH Fields
+description = Fields which displaya a case or doc from the pws webservice.
 package = OS2Web - AcadreCM
 core = 7.x
 configure = admin/config/os2web/pws
