@@ -115,46 +115,38 @@ function os2web_print_send_to_friend_bullet_point_access($bullet_point_id) {
  * @patam string $email           email
  *
  */
-function os2web_print_send_to_friend_send_to_friend($bullet_point_id) {
-  $query = new EntityFieldQuery();
-  $result = array_pop($query->entityCondition('entity_type', 'node')
-          ->propertyCondition('type', 'meeting')
-          ->fieldCondition('field_ref_bullet_points', 'target_id', $bullet_point_id, '=')
-          ->execute());
-  $meeting_id = (int) is_array($result) ? array_pop($result)->nid : null;
+function os2web_print_send_to_friend_send_to_friend($bullet_point_id){
+    $bullet_point = node_load($bullet_point_id);
+    $subject = 'Dagsorden Punkt: ' . $bullet_point->title;
 
-  $bullet_point = node_load($bullet_point_id);
-  $subject = 'Dagsorden Punkt: ' . $bullet_point->title;
+    $name = check_plain(trim($_POST['name']));
+    $message = check_plain(trim($_POST['message']));
+    $to_email = check_plain($_POST['email']);
 
-  $body = "Hej \n\n" . $_POST['name'] . " har sendt dig et dagsordenspunkt. \n\n";
+    $body = "Hej \n\n" . $name ." har sendt dig et dagsordenspunkt. \n\n";
+    $body .= "Med beskeden:\n". $message ."\n\n";
 
-  if (is_numeric($meeting_id)) {
-    $url = url('node/' . $meeting_id, array('absolute' => TRUE));
-    $body .= 'Mødet hvor punktet indgår, kan ses på ' . $url . "\n\n";
-  }
+    $body .= os2web_print_send_to_friend_print_bullet_point($bullet_point_id);
 
-  $body .= "Med beskeden:\n" . trim($_POST['message']) . "\n\n";
+    $from = variable_get('system_mail');
+    $message = array(
+      'id' => 'send_to_friend_',
+      'to' => $to_email,
+      'subject' => $subject,
+      'body' => array($body),
+      'headers' => array(
+  'From' => $from,
+  'Sender' => $from,
+  'Return-Path' => $from,
+  'Content-Type' => 'text/plain; charset=UTF-8;',
+  'Content-Transfer-Encoding' => '8Bit',
+      ),
+    );
+    $system = drupal_mail_system("os2web_print_send_to_friend", "");
 
-  $body .= os2web_print_send_to_friend_print_bullet_point($bullet_point_id);
+    // The format function must be called before calling the mail function.
+    $message = $system->format($message);
 
-  $from = variable_get('system_mail');
-  $message = array(
-    'id' => 'send_to_friend_',
-    'to' => 'jm@bellcom.dk',
-    'subject' => $subject,
-    'body' => array($body),
-    'headers' => array(
-      'From' => $from,
-      'Sender' => $from,
-      'Return-Path' => $from,
-      'Content-Type' => 'text/plain; charset=UTF-8;',
-      'Content-Transfer-Encoding' => '8Bit',
-    ),
-  );
-  $system = drupal_mail_system("os2web_print_send_to_friend", "");
 
-  // The format function must be called before calling the mail function.
-  $message = $system->format($message);
-
-  $system->mail($message);
+    $system->mail($message);
 }
