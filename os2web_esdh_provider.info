@@ -5,6 +5,7 @@ package = OS2Web - ESDH
 core = 7.x
 
 dependencies[]=ctools
+dependencies[]=os2web_adlib_api
 
 ;Added by OS2Web 2012-10-15
 project=OS2Web

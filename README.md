@@ -4,11 +4,16 @@ OS2Web ESDH Provider
 Description
 -----------
 This module provides an ESDH Provider to publish to any
-publishing service
+publishing service. Uses Adlib service to convert files to pdf.
 
 Dependencies
 -----------
+- os2web_adlib_api
 - ctools
+
+Configuration
+-----------
+Configuration of the ESDH provider can be accessed at [admin/config/os2web/esdh_provider]
 
 Installation
 -----------
