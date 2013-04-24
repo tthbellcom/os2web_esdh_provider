@@ -581,3 +581,14 @@ function o2web_esdh_provider_check_attachment_is_part_of_bullet_point($bullet_po
   }
   return $contains;
 }
+
+/**
+ * Implements hook_help().
+ */
+function o2web_esdh_provider_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#o2web_esdh_provider':
+      // TODO.
+      return t('Missing documentation.');
+  }
+}
