@@ -581,3 +581,30 @@ function o2web_esdh_provider_check_attachment_is_part_of_bullet_point($bullet_po
   }
   return $contains;
 }
+
+/**
+ * Implements hook_help().
+ */
+function o2web_esdh_provider_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#o2web_esdh_provider':
+      // TODO.
+      return t('Missing documentation.');
+  }
+}
+
+/**
+ * Implements hook_os2web_help().
+ */
+function o2web_esdh_provider_os2web_help($sections) {
+
+  // Module specific.
+  $sections['o2web_esdh_provider'] = t('<h2>The ESDH Provider:</h2>');
+  $sections['o2web_esdh_provider'] .= t('<b>Description:</b> The ESDH provider links your page with your esdh system. To see if your esdh link is up running, see the <a href="@url" target="_blank">status page</a>.', array('@url' => url('admin/config/os2web/esdh_provider')));
+  $sections['o2web_esdh_provider'] .= t('<b>Configuration:</b> Set up who is allowed to import new meetings from the <a href="@url" target="_blank">OS2web Settings Page (Referat Import)</a>.', array('@url' => url('admin/config/os2web/settings')));
+
+  // Import.
+  $sections['import'] = t('<b>Meeting Import:</b> Import meetings trough the esdh provider. Press the [Run Import] at the <a href="@url" target="_blank">ESDH page</a>.', array('@url' => url('admin/config/os2web/esdh_provider')));
+
+  return $sections;
+}
