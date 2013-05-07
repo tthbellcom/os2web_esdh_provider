@@ -41,4 +41,4 @@ projects[os2web_adlib_api][download][url] = "https://github.com/OS2web/os2web_ad
 
 ; Basic
 projects[ctools][subdir] = "contrib"
-projects[ctools][version] = "1.2"
+projects[ctools][version] = "1.3"
