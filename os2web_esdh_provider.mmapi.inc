@@ -40,7 +40,7 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'node')
         ->propertyCondition('type', 'meeting')
-        ->fieldCondition('field_system_id', 'value', $meeting['system_id'], '=')
+        ->fieldCondition('field_os2web_meetings_system_id', 'value', $meeting['system_id'], '=')
         ->execute();
     if (isset($result['node'])) {
       $nid = array_shift($result['node'])->nid;
@@ -92,7 +92,7 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     $node->field_date[LANGUAGE_NONE][0]['date_type'] = 'datetime';
     // Proper id tagging.
     $node->field_meeting_id[LANGUAGE_NONE][0]['value'] = $meeting['meeting_id'];
-    $node->field_system_id[LANGUAGE_NONE][0]['value'] = $meeting['system_id'];
+    $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'] = $meeting['system_id'];
     // Type import.
     $node->field_meeting_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
 
@@ -386,7 +386,7 @@ function _os2web_esdh_provider_node_tab_page($nid, $op = FALSE) {
   $html = "";
   $node = node_load($nid);
   $meeting_id = $node->field_meeting_id[LANGUAGE_NONE][0]['value'];
-  $system_id = $node->field_system_id[LANGUAGE_NONE][0]['value'];
+  $system_id = $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'];
   $filename = 'Unknown';
   $files = file_scan_directory(variable_get('os2web_meetings_path', ACADRE_MM_IMPORT_DIR), '/\.xml$/i', array('recurse' => FALSE));
   foreach ($files as $file) {
