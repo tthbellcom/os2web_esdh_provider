@@ -82,49 +82,51 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     node_object_prepare($node);
     // Set field values:
     $node->title = $meeting['title'];
-    $node->field_meeting_abbr[LANGUAGE_NONE][0]['value'] = substr($meeting['description'], 0, 49);
+    $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['value'] = substr($meeting['description'], 0, 49);
     // If field has a format, you need to define it. Here we define a default filtered_html format for a body field.
-    $node->field_meeting_abbr[LANGUAGE_NONE][0]['format'] = 'filtered_html';
+    $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['format'] = 'filtered_html';
     // The date.
-    $node->field_date[LANGUAGE_NONE][0]['value'] = $meeting['meeting_date_start'];
-    $node->field_date[LANGUAGE_NONE][0]['value2'] = $meeting['meeting_date_finish'];
-    $node->field_date[LANGUAGE_NONE][0]['timezone'] = 'Europe/Berlin';
-    $node->field_date[LANGUAGE_NONE][0]['date_type'] = 'datetime';
+    $node->field_os2web_meetings_date[LANGUAGE_NONE][0]['value'] = $meeting['meeting_date'];
+    $node->field_os2web_meetings_date[LANGUAGE_NONE][0]['value2'] = $meeting['meeting_date'];
+    $node->field_os2web_meetings_date[LANGUAGE_NONE][0]['timezone'] = 'Europe/Berlin';
+    $node->field_os2web_meetings_date[LANGUAGE_NONE][0]['date_type'] = 'datetime';
     // Proper id tagging.
-    $node->field_meeting_id[LANGUAGE_NONE][0]['value'] = $meeting['meeting_id'];
+    $node->field_os2web_meetings_id[LANGUAGE_NONE][0]['value'] = $meeting['meeting_id'];
     $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'] = $meeting['system_id'];
     // Type import.
-    $node->field_meeting_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
+    $node->field_os2web_meetings_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
 
     // Make sure the committee term is created and get the term.
-    $node->field_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'committee')->tid;
-    $node->field_location[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['location'], 'lokation')->tid;
+    $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee')->tid;
+    if(!empty($meeting['location'])) {
+      $node->field_os2web_meetings_location[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['location'], 'os2web_meetings_tax_location')->tid;
+    }
     // Add QBrick info @FIXME This should be in a node_save hook in qbrick module.
     if (function_exists('_os2web_qbrick_get_movie_id')) {
       $movie_id = _os2web_qbrick_get_movie_id($node);
       if ($movie_id != FALSE) {
         $meeting['movie_id'] = $movie_id;
         $chapters = _os2web_qbrick_get_chapters($movie_id);
-        $node->field_qbrick_ref[LANGUAGE_NONE][0]['id'] = $movie_id;
-        $node->field_qbrick_ref[LANGUAGE_NONE][0]['seek'] = 0;
+        $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['id'] = $movie_id;
+        $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['seek'] = 0;
         foreach ($meeting['items'] as &$item) {
           $item['chapter'] = isset($chapters[$item['id']]) ? $chapters[$item['id']] : 0;
           $item['movie_id'] = $movie_id;
         }
       }
       else {
-        $node->field_qbrick_ref = array();
+        $node->field_os2web_meetings_qbrickref = array();
       }
     }
     // Add full document.
     if (FALSE !== ($file = _os2web_esdh_provider_import_file($meeting['full_doc']))) {
-      $node->field_full_doc[LANGUAGE_NONE][] = (array) $file;
+      $node->field_os2web_meetings_full_doc[LANGUAGE_NONE][] = (array) $file;
     }
     // Import items.
     if (is_array($meeting['items'])) {
       $item_nids = _os2web_esdh_provider_import_items($meeting['items']);
       foreach ($item_nids as $nid) {
-        $node->field_ref_bullet_points[LANGUAGE_NONE][]['target_id'] = $nid;
+        $node->field_os2web_meetings_bullets[LANGUAGE_NONE][]['target_id'] = $nid;
       }
     }
 
@@ -174,8 +176,8 @@ function _os2web_esdh_provider_import_items($items) {
     else {
       $node->field_bul_point_closed[LANGUAGE_NONE][]['value'] = 1;
       if (isset($item['movie_id']) && is_numeric($item["chapter"])) {
-        $node->field_qbrick_ref[LANGUAGE_NONE][0]['id'] = $item['movie_id'];
-        $node->field_qbrick_ref[LANGUAGE_NONE][0]['seek'] = $item["chapter"];
+        $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['id'] = $item['movie_id'];
+        $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['seek'] = $item["chapter"];
       }
       // Gather the bullets for the item.
       if (isset($item['bullets']) && is_array($item['bullets'])) {
@@ -355,6 +357,7 @@ function _os2web_esdh_provider_import_file($file_meta) {
 function _acadre_esdh_import_term($term_name, $vocab) {
   // TODO: Process members of the committee.
   // FIXME: MAke vocab name configurable.
+
   $vid = db_select('taxonomy_vocabulary', 'tv')
       ->fields('tv', array('vid'))
       ->condition('machine_name', $vocab)
@@ -385,7 +388,7 @@ function _acadre_esdh_import_term($term_name, $vocab) {
 function _os2web_esdh_provider_node_tab_page($nid, $op = FALSE) {
   $html = "";
   $node = node_load($nid);
-  $meeting_id = $node->field_meeting_id[LANGUAGE_NONE][0]['value'];
+  $meeting_id = $node->field_os2web_meetings_id[LANGUAGE_NONE][0]['value'];
   $system_id = $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'];
   $filename = 'Unknown';
   $files = file_scan_directory(variable_get('os2web_meetings_path', ACADRE_MM_IMPORT_DIR), '/\.xml$/i', array('recurse' => FALSE));
