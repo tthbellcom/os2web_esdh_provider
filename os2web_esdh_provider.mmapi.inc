@@ -73,7 +73,7 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     }
 
     // Or any other content type you want.
-    $node->type = "meeting";
+    $node->type = "os2web_meetings_meeting";
     // Or any language code if Locale module is enabled. More on this below.
     $node->language = LANGUAGE_NONE;
     // Or any id you wish.
@@ -161,7 +161,7 @@ function _os2web_esdh_provider_import_items($items) {
   $nids = array();
   foreach ($items as $item) {
     $node = new stdClass();
-    $node->type = "bullet_point";
+    $node->type = "os2web_meetings_bullet";
     $node->language = LANGUAGE_NONE;
     $node->uid = 1;
     $node->title = $item['title'];
@@ -225,7 +225,7 @@ function _os2web_esdh_provider_import_bullets($bullets) {
   $nids = array();
   foreach ($bullets as $idx => $bullet) {
     $node = new stdClass();
-    $node->type = "bullet_point_attachment";
+    $node->type = "os2web_meetings_bullet_attach";
     $node->language = LANGUAGE_NONE;
     $node->uid = 1;
     $node->title = $bullet['title'];
