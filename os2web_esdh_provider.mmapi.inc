@@ -168,13 +168,13 @@ function _os2web_esdh_provider_import_items($items) {
     // Set some default values.
     node_object_prepare($node);
     if ($item['access'] === 'Lukket') {
-      $node->field_bul_point_closed[LANGUAGE_NONE][]['value'] = 0;
+      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 0;
       node_submit($node);
       node_save($node);
       $nids[] = $node->nid;
     }
     else {
-      $node->field_bul_point_closed[LANGUAGE_NONE][]['value'] = 1;
+      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 1;
       if (isset($item['movie_id']) && is_numeric($item["chapter"])) {
         $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['id'] = $item['movie_id'];
         $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['seek'] = $item["chapter"];
@@ -183,11 +183,11 @@ function _os2web_esdh_provider_import_items($items) {
       if (isset($item['bullets']) && is_array($item['bullets'])) {
         $bullet_nids = _os2web_esdh_provider_import_bullets($item['bullets']);
         foreach ($bullet_nids as $nid) {
-          $node->field_ref_attachment[LANGUAGE_NONE][]['target_id'] = $nid;
+          $node->field_os2web_meetings_attach[LANGUAGE_NONE][]['target_id'] = $nid;
         }
       }
       else {
-        $node->field_ref_attachment[LANGUAGE_NONE] = array();
+        $node->field_os2web_meetings_attach[LANGUAGE_NONE] = array();
       }
       // Gather enclosures.
       foreach ($item['enclosures'] as $enclosure) {
