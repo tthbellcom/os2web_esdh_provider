@@ -224,7 +224,9 @@ function _os2web_esdh_provider_import_bullets($bullets) {
   set_time_limit(180);
   $nids = array();
   foreach ($bullets as $idx => $bullet) {
-    $node = new stdClass();
+ #  error_log(print_r($bullet,1)); 
+  
+   $node = new stdClass();
     $node->type = "os2web_meetings_bullet_attach";
     $node->language = LANGUAGE_NONE;
     $node->uid = 1;
@@ -234,7 +236,7 @@ function _os2web_esdh_provider_import_bullets($bullets) {
     // Let's add body field.
     $node->field_bpa_body[$node->language][0]['value'] = $bullet['body'];
     // If field has a format, you need to define it. Here we define a default filtered_html format for a body field.
-    $node->field_bpa_body[$node->language][0]['format'] = 'filtered_html';
+    $node->field_bpa_body[$node->language][0]['format'] = 'full_html';
     node_submit($node);
     node_save($node);
     $nids[$idx] = $node->nid;
