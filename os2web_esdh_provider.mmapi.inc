@@ -165,9 +165,10 @@ function _os2web_esdh_provider_import_items($items) {
     $node->language = LANGUAGE_NONE;
     $node->uid = 1;
     $node->title = $item['title'];
+//    $node->body['und'][0]['value'] = $item['body'];
     // Set some default values.
     node_object_prepare($node);
-    if ($item['access'] === 'Lukket') {
+    if ($item['access'] !== 'SKAL PUBLICERES') {
       $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 0;
       node_submit($node);
       node_save($node);
@@ -193,7 +194,7 @@ function _os2web_esdh_provider_import_items($items) {
       foreach ($item['enclosures'] as $enclosure) {
         if ($enclosure['access']) {
           if ($file = _os2web_esdh_provider_import_file($enclosure)) {
-            $node->field_enclosures[LANGUAGE_NONE][] = (array) $file;
+            $node->field_os2web_meetings_enclosures[LANGUAGE_NONE][] = (array) $file;
           }
           else {
             watchdog('ESDH', 'There was an error importing file %uri ', array('%uri' => $enclosure['uri']), WATCHDOG_ERROR);
@@ -232,9 +233,9 @@ function _os2web_esdh_provider_import_bullets($bullets) {
     // Set some default values.
     node_object_prepare($node);
     // Let's add body field.
-    $node->field_bpa_body[$node->language][0]['value'] = $bullet['body'];
+    $node->field_os2web_meetings_bpa_body[$node->language][0]['value'] = trim($bullet['body']);
     // If field has a format, you need to define it. Here we define a default filtered_html format for a body field.
-    $node->field_bpa_body[$node->language][0]['format'] = 'filtered_html';
+    $node->field_os2web_meetings_bpa_body[$node->language][0]['format'] = 'filtered_html';
     node_submit($node);
     node_save($node);
     $nids[$idx] = $node->nid;
