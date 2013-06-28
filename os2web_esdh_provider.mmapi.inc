@@ -39,9 +39,11 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     // Run check to see if meeting is already imported.
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'node')
-        ->propertyCondition('type', 'meeting')
+        ->propertyCondition('type', 'os2web_meetings_meeting')
         ->fieldCondition('field_os2web_meetings_system_id', 'value', $meeting['system_id'], '=')
         ->execute();
+    error_log("system_id ".$meeting['system_id']);    
+    error_log(print_r("node " . $result['node'],1));
     if (isset($result['node'])) {
       $nid = array_shift($result['node'])->nid;
       if (!$meeting['publish']) {
@@ -92,9 +94,11 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     $node->field_os2web_meetings_date[LANGUAGE_NONE][0]['date_type'] = 'datetime';
     // Proper id tagging.
     $node->field_os2web_meetings_id[LANGUAGE_NONE][0]['value'] = $meeting['meeting_id'];
+    $node->field_os2web_meetings_sub_id[LANGUAGE_NONE][0]['value'] = $meeting['meeting_sub_id'];
     $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'] = $meeting['system_id'];
     // Type import.
     $node->field_os2web_meetings_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
+    $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['value'] = $meeting['type'];
 
     // Make sure the committee term is created and get the term.
     $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee')->tid;
