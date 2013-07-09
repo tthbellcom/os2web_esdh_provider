@@ -29,10 +29,26 @@ function _os2web_esdh_provider_status() {
       $rows[] = array($api, 'Unavailable', 'Not enabled.', 'Error');
     }
   }
+
+  // Show a table of watchdog entries if the debug flag is on.
+  $watchdog_table = '';
+  if (variable_get('os2web_esdh_provider_debug_info')) {
+    $watchdog_messages = db_query('SELECT * FROM {watchdog} w WHERE w.type = :type AND w.severity = :severity ORDER BY w.timestamp DESC', array(':type' => 'acadre MM', ':severity' => WATCHDOG_WARNING));
+    $watchdog_head = array(t('Warning messages in descending order'), t('Date'));
+    foreach ($watchdog_messages as $row) {
+      $watchdog_rows[] = array(
+        t($row->message, unserialize($row->variables)),
+        format_date($row->timestamp),
+      );
+    }
+    $watchdog_table = theme('table', array('header' => $watchdog_head, 'rows' => $watchdog_rows));
+  }
+
   return '<h2>' . t('ESDH Provider API plugin status') . '</h2>' .
       theme('table', array('header' => $head, 'rows' => $rows)) .
       '<h2>' . t('Import of MM Based ESDH documents. (Last import was run at %time)', array('%time' => format_date(variable_get('os2web_esdh_provider_last_import', 0)))) . '</h2>' .
-      drupal_render(drupal_get_form('os2web_esdh_provider_import_form'));
+      drupal_render(drupal_get_form('os2web_esdh_provider_import_form')) .
+      $watchdog_table;
 }
 
 /**
@@ -61,6 +77,18 @@ function os2web_esdh_provider_import_form() {
     '#title' => t('Focused import id'),
     '#description' => t('Ie. 1577 to reimport XML_1577.xml.'),
   );
+  $form['group']['debug_info'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Output debug info on import.'),
+    '#description' => t('Generates an output from watchdog, and print timer reads in log.'),
+    '#default_value' => variable_get('os2web_esdh_provider_debug_info', FALSE),
+  );
+  $form['group']['debug_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email address to send status on import.'),
+    '#description' => t('The email to send status mail to.'),
+    '#default_value' => variable_get('os2web_esdh_provider_debug_email'),
+  );
   return $form;
 }
 
@@ -68,6 +96,8 @@ function os2web_esdh_provider_import_form() {
  * Implements hook_FORM_submit().
  */
 function os2web_esdh_provider_import_form_submit($form, &$form_state) {
+  variable_set('os2web_esdh_provider_debug_info', $form_state['values']['debug_info']);
+  variable_set('os2web_esdh_provider_debug_email', $form_state['values']['debug_email']);
   drupal_goto('admin/config/os2web/esdh_provider/importconfirm', array(
     'query' => array(
       'id' => $form_state['values']['focus'],
@@ -126,11 +156,11 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
     'title' => 'Dagsorden import',
     'operations' => array(),
     'file' => drupal_get_path('module', 'os2web_esdh_provider') . '/os2web_esdh_provider.mmapi.inc',
+    'init_message' => t('Scanner filer'),
   );
   $meetings = os2web_esdh_provider_invoke('mm', 'get_import_list');
   foreach ($meetings as $meeting) {
     if (empty($focus) || in_array($meeting['id'], $focus)) {
-      error_log("Var: \$meeting = " . print_r($meeting, 1));
       $batch['operations'][] = array(
         '_os2web_esdh_provider_import_meeting',
         array($meeting, $force));
