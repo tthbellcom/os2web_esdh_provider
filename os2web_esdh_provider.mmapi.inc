@@ -149,8 +149,8 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     $node->field_os2web_meetings_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
 
     // Make sure the committee term is created and get the term.
-    $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'committee')->tid;
-    $node->field_os2web_meetings_location[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['location'], 'lokation')->tid;
+    $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee')->tid;
+    $node->field_os2web_meetings_location[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['location'], 'os2web_meetings_tax_location')->tid;
     // Add QBrick info @FIXME This should be in a node_save hook in qbrick module.
     if (function_exists('_os2web_qbrick_get_movie_id')) {
       $movie_id = _os2web_qbrick_get_movie_id($node);
