@@ -131,29 +131,29 @@ function _os2web_esdh_provider_import_access() {
  * Implements hook_node_delete().
  */
 function os2web_esdh_provider_node_delete($node) {
-  if ($node->type === 'meeting') {
+  if ($node->type === 'os2web_meetings_meeting') {
     // Remove any addenums relating to this node.
     $query = new EntityFieldQuery();
     $result = array_keys(array_shift($query->entityCondition('entity_type', 'node')
-                ->propertyCondition('type', 'meeting')
-                ->fieldCondition('field_addenum_to', 'nid', $node->nid, '=')
+                ->propertyCondition('type', 'os2web_meetings_meeting')
+                ->fieldCondition('field_os2web_meetings_addendum', 'nid', $node->nid, '=')
                 ->execute()));
     if (is_array($result)) {
       foreach ($result as $add_node) {
         node_delete($add_node->nid);
       }
     }
-    // Delete bullets from meeting.
-    $items = array_shift($node->field_ref_bullet_points);
+    //Delete bullets from meeting.
+    $items = array_shift($node->field_os2web_meetings_bullets);
     if (is_array($items)) {
       foreach ($items as $nids) {
         node_delete($nids['target_id']);
       }
     }
   }
-  if ($node->type === 'bullet_point') {
+  if ($node->type === 'os2web_meetings_bullet') {
     // Delete bullet attachments from meeting.
-    $bullets = array_shift($node->field_ref_attachment);
+    $bullets = array_shift($node->field_os2web_meetings_attach);
     if (is_array($bullets)) {
       foreach ($bullets as $nids) {
         node_delete($nids['target_id']);
