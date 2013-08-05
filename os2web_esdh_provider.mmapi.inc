@@ -133,6 +133,34 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     node_object_prepare($node);
     // Set field values:
     $node->title = $meeting['title'];
+
+    # The original field for title came from $meeting['title'];
+    # This is a rewrite of the function to set the path automaticaly and with custom data - sutch as date.
+    # skifter@bellcom.dk - 2013-04-14 / 2013-04-24
+
+    # is the pathauto module loades ?
+    if (module_exists('pathauto')) {
+
+      # Loading the path auto modules
+      module_load_include('inc', 'pathauto', 'pathauto');
+
+      # Setting the new title with committee name and meeting date substring
+      $my_date = date_create(substr($meeting['meeting_date_start'], 0,10));
+      $format = "d-m-Y";
+      $node->title = $meeting['committee'] . ' - ' . date_format($my_date,$format);
+
+      # adding the alias and setting pathauto to 0 for this content type. otherwise we get 2 aliases.
+      $path_alias = array(
+          'alias' => 'dagsorden/' . pathauto_cleanstring($node->title),
+          'pid' => null,
+          'source' => null,
+          'language' => LANGUAGE_NONE,
+          'pathauto' => 0,
+      );
+      $node->path = $path_alias;
+    }
+
+
     $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['value'] = substr($meeting['description'], 0, 49);
     // If field has a format, you need to define it. Here we define a default filtered_html format for a body field.
     $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['format'] = 'filtered_html';
