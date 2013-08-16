@@ -131,29 +131,29 @@ function _os2web_esdh_provider_import_access() {
  * Implements hook_node_delete().
  */
 function os2web_esdh_provider_node_delete($node) {
-  if ($node->type === 'meeting') {
+  if ($node->type === 'os2web_meetings_meeting') {
     // Remove any addenums relating to this node.
     $query = new EntityFieldQuery();
     $result = array_keys(array_shift($query->entityCondition('entity_type', 'node')
-                ->propertyCondition('type', 'meeting')
-                ->fieldCondition('field_addenum_to', 'nid', $node->nid, '=')
+                ->propertyCondition('type', 'os2web_meetings_meeting')
+                ->fieldCondition('field_os2web_meetings_addendum', 'nid', $node->nid, '=')
                 ->execute()));
     if (is_array($result)) {
       foreach ($result as $add_node) {
         node_delete($add_node->nid);
       }
     }
-    // Delete bullets from meeting.
-    $items = array_shift($node->field_ref_bullet_points);
+    //Delete bullets from meeting.
+    $items = array_shift($node->field_os2web_meetings_bullets);
     if (is_array($items)) {
       foreach ($items as $nids) {
         node_delete($nids['target_id']);
       }
     }
   }
-  if ($node->type === 'bullet_point') {
+  if ($node->type === 'os2web_meetings_bullet') {
     // Delete bullet attachments from meeting.
-    $bullets = array_shift($node->field_ref_attachment);
+    $bullets = array_shift($node->field_os2web_meetings_attach);
     if (is_array($bullets)) {
       foreach ($bullets as $nids) {
         node_delete($nids['target_id']);
@@ -172,12 +172,18 @@ function os2web_esdh_provider_cron() {
     $meetings = os2web_esdh_provider_invoke('mm', 'get_import_list');
     $queue = DrupalQueue::get('acadre_mm_import');
     if ($queue->numberOfItems() == 0) {
+
+      $current_timestamp = time();
+      $last_mm_import_time = variable_get('os2web_esdh_provider_last_mm_import', FALSE);
+
       foreach ($meetings as $meeting) {
-        $queue->createItem(array('meeting' => $meeting, 'force' => FALSE));
+        // Only import files newer than last cron job.
+        if (!$last_mm_import_time || filemtime($meeting['uri']) > $last_mm_import_time) {
+          $queue->createItem(array('meeting' => $meeting, 'force' => FALSE));
+        }
       }
-      if (os2web_esdh_provider_supports('mm', 'post_import_process')) {
-        os2web_esdh_provider_invoke('mm', 'post_import_process');
-      }
+      $queue->createItem(array('post_import_process' => TRUE));
+      variable_set('os2web_esdh_provider_last_mm_import', $current_timestamp);
     }
   }
 }
@@ -200,8 +206,15 @@ function os2web_esdh_provider_cron_queue_info() {
  *   Meeting data for the import.
  */
 function _os2web_esdh_provider_cron_queue_worker($args) {
-  module_load_include('inc', 'os2web_esdh_provider', 'os2web_esdh_provider.mmapi');
-  _os2web_esdh_provider_import_meeting($args['meeting'], $args['force']);
+  if (isset($args['meeting']) && isset($args['force'])) {
+    module_load_include('inc', 'os2web_esdh_provider', 'os2web_esdh_provider.mmapi');
+    _os2web_esdh_provider_import_meeting($args['meeting'], $args['force']);
+  }
+  elseif (isset($args['post_import_process']) &&
+          $args['post_import_process'] === TRUE &&
+          os2web_esdh_provider_supports('mm', 'post_import_process')) {
+    os2web_esdh_provider_invoke('mm', 'post_import_process');
+  }
 }
 
 /**
@@ -287,6 +300,7 @@ function os2web_esdh_provider_invoke() {
   ctools_include('plugins');
   $plugin = ctools_get_plugins('os2web_esdh_provider', $api);
   $plugin = array_shift($plugin);
+
   if ($plugin) {
     $function = ctools_plugin_get_function($plugin, $method);
     if ($function) {
@@ -348,6 +362,8 @@ function os2web_esdh_provider_default_meeting() {
     'meeting_id' => NULL,
     // Int.
     'system_id' => NULL,
+    // Int.
+    'meeting_sub_id' => NULL,
     // Boolean.
     'publish' => NULL,
     // Int - optional.
@@ -509,79 +525,6 @@ function _os2web_esdh_provider_adlib_check($caller = 'internal') {
   return prod_check_execute_check($check, $caller);
 }
 
-
-function o2web_esdh_provider_check_user_can_see_bullet_point($meeting_id, $bullet_point_id) {
-  global $user;
-  if (!$user->uid)
-    return FALSE;
-  if (o2web_esdh_provider_check_bullet_point_is_part_of_meeting($meeting_id, $bullet_point_id)) {
-    $bullet_points = entity_load('node', array($bullet_point_id), array('type' => 'bullet_point'));
-    $is_closed = $bullet_points[$bullet_point_id]->field_bul_point_closed['und'][0]['value'];
-
-    if (intval($is_closed) == 0) { //is opened
-      return TRUE;
-    }
-    else { //is closed
-      $user_ent = entity_load('user', array($user->uid));
-
-      $meetings = entity_load('node', array($meeting_id), array('type' => 'meeting'));
-      $meeting_committee_id = $meetings[$meeting_id]->field_committee['und'][0]['tid'];
-
-      if (!empty($user_ent[$user->uid]->field_user_committee)) {
-        foreach ($user_ent[$user->uid]->field_user_committee['und'] as $user_committee_id) {
-          if (intval($meeting_committee_id) == $user_committee_id['tid']) {
-            return TRUE;
-          }
-        }
-      }
-      //none of the above, access denied
-      return FALSE;
-    }
-  }
-  else {
-    return FALSE;
-  }
-}
-
-function o2web_esdh_provider_check_user_can_see_bullet_point_attachment($meeting_id, $bullet_point_id, $bullet_point_attachment_id) {
-  if (o2web_esdh_provider_check_attachment_is_part_of_bullet_point($bullet_point_id, $bullet_point_attachment_id))
-    return o2web_esdh_provider_check_user_can_see_bullet_point($meeting_id, $bullet_point_id);
-  else
-    return FALSE;
-}
-
-function o2web_esdh_provider_check_bullet_point_is_part_of_meeting($meeting_id, $bullet_point_id) {
-  $meetings = entity_load('node', array($meeting_id), array('type' => 'meeting'));
-  $meeting = $meetings[$meeting_id];
-
-  $contains = FALSE;
-  if (!empty($meeting->field_ref_bullet_points['und'])) {
-    foreach ($meeting->field_ref_bullet_points['und'] as $ref_bullet_point) {
-      if (intval($bullet_point_id) == intval($ref_bullet_point['target_id'])) {
-        $contains = TRUE;
-        break;
-      }
-    }
-  }
-  return $contains;
-}
-
-function o2web_esdh_provider_check_attachment_is_part_of_bullet_point($bullet_point_id, $bilag_id) {
-  $bullet_points = entity_load('node', array($bullet_point_id), array('type' => 'bullet_point'));
-  $bullet_point = $bullet_points[$bullet_point_id];
-
-  $contains = FALSE;
-  if (!empty($bullet_point->field_ref_attachment['und'])) {
-    foreach ($bullet_point->field_ref_attachment['und'] as $ref_bullet_point_attachment) {
-      if (intval($bilag_id) == intval($ref_bullet_point_attachment['target_id'])) {
-        $contains = TRUE;
-        break;
-      }
-    }
-  }
-  return $contains;
-}
-
 /**
  * Implements hook_help().
  */
@@ -599,9 +542,10 @@ function o2web_esdh_provider_help($path, $arg) {
 function o2web_esdh_provider_os2web_help($sections) {
 
   // Module specific.
-  $sections['o2web_esdh_provider'] = t('<h2>The ESDH Provider:</h2>');
+  $sections['list_of_content'] .= t('<a href="#os2web_esdh_provider">OS2web ESDH Provider</a><br />');
+  $sections['o2web_esdh_provider'] = t('<h2 id="os2web_esdh_provider">The ESDH Provider:</h2>');
   $sections['o2web_esdh_provider'] .= t('<b>Description:</b> The ESDH provider links your page with your esdh system. To see if your esdh link is up running, see the <a href="@url" target="_blank">status page</a>.', array('@url' => url('admin/config/os2web/esdh_provider')));
-  $sections['o2web_esdh_provider'] .= t('<b>Configuration:</b> Set up who is allowed to import new meetings from the <a href="@url" target="_blank">OS2web Settings Page (Referat Import)</a>.', array('@url' => url('admin/config/os2web/settings')));
+  $sections['configuration'] .= t('<b>Configuration:</b> Set up who is allowed to import new meetings from the <a href="@url" target="_blank">OS2web Settings Page (Referat Import)</a>.', array('@url' => url('admin/config/os2web/settings')));
 
   // Import.
   $sections['import'] = t('<b>Meeting Import:</b> Import meetings trough the esdh provider. Press the [Run Import] at the <a href="@url" target="_blank">ESDH page</a>.', array('@url' => url('admin/config/os2web/esdh_provider')));
