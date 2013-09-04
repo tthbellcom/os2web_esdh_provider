@@ -167,7 +167,8 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       $node->title = $meeting['committee'] . ' - ' . date_format($my_date, $format);
 
       $alias = 'dagsorden/' . pathauto_cleanstring($node->title);
-      pathauto_alias_uniquify($alias, NULL, $node->language);
+      $source = (isset($node->nid)) ? 'node/' . $node->nid : '';
+      pathauto_alias_uniquify($alias, $source, $node->language);
 
       // Adding the alias and setting pathauto to 0 for this content type.
       // otherwise we get 2 aliases.
@@ -180,7 +181,6 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       );
       $node->path = $path_alias;
     }
-
 
     $node->field_os2web_meetings_abbr[LANGUAGE_NONE][0]['value'] = substr($meeting['description'], 0, 49);
     // If field has a format, you need to define it. Here we define a default
