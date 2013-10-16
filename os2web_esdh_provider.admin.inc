@@ -10,6 +10,7 @@
  * Page callback. Displays status page.
  */
 function _os2web_esdh_provider_status() {
+  ctools_include('plugins');
   $apis = array_keys(os2web_esdh_provider_ctools_plugin_type());
   $head = array('API name', 'Description', 'module', 'status');
   $rows = array();
@@ -44,10 +45,11 @@ function _os2web_esdh_provider_status() {
     $watchdog_table = theme('table', array('header' => $watchdog_head, 'rows' => $watchdog_rows));
   }
 
+  $import_form = drupal_get_form('os2web_esdh_provider_import_form');
   return '<h2>' . t('ESDH Provider API plugin status') . '</h2>' .
       theme('table', array('header' => $head, 'rows' => $rows)) .
       '<h2>' . t('Import of MM Based ESDH documents. (Last import was run at %time)', array('%time' => format_date(variable_get('os2web_esdh_provider_last_import', 0)))) . '</h2>' .
-      drupal_render(drupal_get_form('os2web_esdh_provider_import_form')) .
+      drupal_render($import_form) .
       $watchdog_table;
 }
 
