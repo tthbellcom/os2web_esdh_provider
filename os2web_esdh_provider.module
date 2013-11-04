@@ -133,11 +133,13 @@ function os2web_esdh_provider_node_delete($node) {
   if ($node->type === 'os2web_meetings_meeting') {
     // Remove any addenums relating to this node.
     $query = new EntityFieldQuery();
-    $result = array_keys(array_shift($query->entityCondition('entity_type', 'node')
-                ->propertyCondition('type', 'os2web_meetings_meeting')
-                ->fieldCondition('field_os2web_meetings_addendum', 'nid', $node->nid, '=')
-                ->execute()));
+    $result = $query->entityCondition('entity_type', 'node')
+      ->propertyCondition('type', 'os2web_meetings_meeting')
+      ->fieldCondition('field_os2web_meetings_addendum', 'nid', $node->nid, '=')
+      ->execute();
+    $result = array_shift($result);
     if (is_array($result)) {
+      $result = array_keys($result);
       foreach ($result as $add_node) {
         node_delete($add_node->nid);
       }
