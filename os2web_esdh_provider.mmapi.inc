@@ -197,10 +197,11 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       }
     }
     // Add full document.
-    if (FALSE !== ($file = _os2web_esdh_provider_import_file($meeting['full_doc']))) {
-      $node->field_os2web_meetings_full_doc[LANGUAGE_NONE][0] = (array) $file;
+    if (!empty($meeting['full_doc'])) {
+      if (FALSE !== ($file = _os2web_esdh_provider_import_file($meeting['full_doc']))) {
+        $node->field_os2web_meetings_full_doc[LANGUAGE_NONE][0] = (array) $file;
+      }
     }
-
 
     // Delete all bullet points before importing.
     $bullets = array_shift($node->field_os2web_meetings_bullets);
