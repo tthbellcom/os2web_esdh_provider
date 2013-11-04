@@ -121,7 +121,6 @@ function _os2web_esdh_provider_node_tab_access($nid) {
  * Access callback for the import service call.
  */
 function _os2web_esdh_provider_import_access() {
-  return TRUE;
   $ip_string = variable_get('os2web_meetings_import_service_ip', '');
   $valid_ips = array_map('trim', explode(',', $ip_string));
   return in_array(ip_address(), $valid_ips);
