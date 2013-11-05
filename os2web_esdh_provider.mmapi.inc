@@ -197,10 +197,11 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       }
     }
     // Add full document.
-    if (FALSE !== ($file = _os2web_esdh_provider_import_file($meeting['full_doc']))) {
-      $node->field_os2web_meetings_full_doc[LANGUAGE_NONE][0] = (array) $file;
+    if (!empty($meeting['full_doc'])) {
+      if (FALSE !== ($file = _os2web_esdh_provider_import_file($meeting['full_doc']))) {
+        $node->field_os2web_meetings_full_doc[LANGUAGE_NONE][0] = (array) $file;
+      }
     }
-
 
     // Delete all bullet points before importing.
     $bullets = array_shift($node->field_os2web_meetings_bullets);
@@ -337,7 +338,7 @@ function _os2web_esdh_provider_import_bullets($bullets) {
     $node->field_os2web_meetings_bpa_body[$node->language][0]['value'] = $bullet['body'];
     // If field has a format, you need to define it.
     // Here we define a default filtered_html format for a body field.
-    $node->field_os2web_meetings_bpa_body[$node->language][0]['format'] = 'filtered_html';
+    $node->field_os2web_meetings_bpa_body[$node->language][0]['format'] = _os2web_esdh_provider_bpa_body_format();
     $node = node_submit($node);
     node_save($node);
     $nids[$idx] = $node->nid;
@@ -709,4 +710,24 @@ function _os2web_esdh_provider_send_statusmail($message, $is_error = FALSE) {
     return $mail_system->mail($message);
 
   }
+}
+
+/**
+ * Checks if a custom text format is defined for the BPA body field.
+ * I fall backs to filtered html.
+ *
+ * @return string
+ *   Text format machine name.
+ */
+function _os2web_esdh_provider_bpa_body_format() {
+  static $cache;
+  if (empty($cache)) {
+    if (defined('MM_BPA_BODY_FORMAT') && filter_format_exists(MM_BPA_BODY_FORMAT)) {
+      $cache = MM_BPA_BODY_FORMAT;
+    }
+    else {
+      $cache = 'filtered_html';
+    }
+  }
+  return $cache;
 }
