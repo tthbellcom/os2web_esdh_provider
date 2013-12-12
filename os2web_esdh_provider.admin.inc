@@ -45,12 +45,66 @@ function _os2web_esdh_provider_status() {
     $watchdog_table = theme('table', array('header' => $watchdog_head, 'rows' => $watchdog_rows));
   }
 
+  // tth@bellcom : status for external meeting importer
+
+
+
+  $status = '<h2>Meeting import: currently not running</h2>';
+
+  if(!lock_acquire('os2web_esdh_provider_queue')){
+    $status = '<h2>Meeting import: running!</h2><p>Processing:</p>';
+  }
+
+
+  $queue_full = variable_get('os2web_esdh_provider_queue');
+
+  foreach($queue_full as $key => $queue){
+
+    if(isset($queue['operations'])){
+      $status .= drupal_render(drupal_get_form('os2web_esdh_provider_queue_form'));
+      $status .= 'In queue:<br />';
+      $queue_header = array(t('Publication id:'), t('uri'), t('Force'));
+
+      foreach($queue['operations'] as $operation){
+        $id = $operation[1][0]['id'];
+        $uri = $operation[1][0]['uri'];
+        $operation[1][1] ? $force = 'True' : $force = '';
+
+        if(is_numeric($id)){
+          $queue_rows[] = array($id, $uri, $force);
+        }
+      }
+    }
+  }
+
   $import_form = drupal_get_form('os2web_esdh_provider_import_form');
   return '<h2>' . t('ESDH Provider API plugin status') . '</h2>' .
       theme('table', array('header' => $head, 'rows' => $rows)) .
       '<h2>' . t('Import of MM Based ESDH documents. (Last import was run at %time)', array('%time' => format_date(variable_get('os2web_esdh_provider_last_import', 0)))) . '</h2>' .
       drupal_render($import_form) .
-      $watchdog_table;
+      $watchdog_table . $status . theme('table', array('header' => $queue_header, 'rows' => $queue_rows));
+}
+
+/**
+ * Queue form
+ */
+function os2web_esdh_provider_queue_form($form_state){
+  $form = array();
+  $form['delete'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete queue'),
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for queue from
+ */
+function os2web_esdh_provider_queue_form_submit(&$form, &$form_state){
+  // Empty queue
+  variable_set('os2web_esdh_provider_queue', array());
+  drupal_set_message(t('Deleted queue'));
 }
 
 /**
@@ -148,6 +202,9 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
     drupal_set_message(t('ERROR: No valid MM importer plugin active!'), 'error');
     return;
   }
+
+  $external_queue = variable_get('os2web_esdh_provider_queue_enabled', FALSE);
+
   $force = $form_state['values']['_meeting_force'] == 1;
   $focus = array_map('trim', explode(',', $form_state['values']['_meeting_id']));
   if (count($focus) === 1 && $focus[0] === '') {
@@ -173,7 +230,19 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
       'os2web_esdh_provider_invoke',
       array('mm', 'post_import_process'));
   }
-  batch_set($batch);
-  // This isn't entirely neccesary, but needed to make the redirect work.
-  batch_process('admin/config/os2web/esdh_provider');
+
+  variable_set('os2web_esdh_provider_last_mm_import', $current_timestamp);
+
+  if($external_queue){
+    $queue_full = variable_get('os2web_esdh_provider_queue', array());
+    $queue_full[time()] = $batch;
+
+    variable_set('os2web_esdh_provider_queue', $queue_full );
+    drupal_goto('admin/config/os2web/esdh_provider');
+  }
+  else {
+    batch_set($batch);
+    // This isn't entirely neccesary, but needed to make the redirect work.
+    batch_process('admin/config/os2web/esdh_provider');
+  }
 }

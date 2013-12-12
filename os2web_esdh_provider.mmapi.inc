@@ -35,6 +35,7 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
   err_debug('Init.');
 
   $meetings = os2web_esdh_provider_invoke('mm', 'import_meeting', $meeting_id);
+
   err_debug('Done generate meetings array from XML ' . $meeting_id['id']);
 
   $nids = array();
@@ -322,7 +323,7 @@ function _os2web_esdh_provider_import_bullets($bullets) {
 
   // Since we need to run this often,
   // we reset the execution timer to avoid timeouts.
-  set_time_limit(180);
+  //set_time_limit(180);
   $nids = array();
 
   foreach ($bullets as $idx => $bullet) {
@@ -361,7 +362,7 @@ function _os2web_esdh_provider_import_file($file_meta) {
 
   // Since we need to run this often,
   // we reset the execution timer to avoid timeouts.
-  set_time_limit(300);
+  //set_time_limit(300);
   $uri_in = $file_meta['uri'];
 
   $pinfo = pathinfo($uri_in);
