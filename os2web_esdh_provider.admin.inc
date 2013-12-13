@@ -46,9 +46,6 @@ function _os2web_esdh_provider_status() {
   }
 
   // tth@bellcom : status for external meeting importer
-
-
-
   $status = '<h2>Meeting import: currently not running</h2>';
 
   if(!lock_acquire('os2web_esdh_provider_queue')){
@@ -58,11 +55,13 @@ function _os2web_esdh_provider_status() {
 
   $queue_full = variable_get('os2web_esdh_provider_queue');
 
+  $status .= drupal_render(drupal_get_form('os2web_esdh_provider_queue_form'));
+  $status .= 'In queue:<br />';
+
   foreach($queue_full as $key => $queue){
 
     if(isset($queue['operations'])){
-      $status .= drupal_render(drupal_get_form('os2web_esdh_provider_queue_form'));
-      $status .= 'In queue:<br />';
+
       $queue_header = array(t('Publication id:'), t('uri'), t('Force'));
 
       foreach($queue['operations'] as $operation){
