@@ -119,8 +119,14 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       }
     }
     else {
-      // We create a new node object.
-      $node = new stdClass();
+      //check if there is an sofd version of this node (acadre and syddjurs systems only)
+      if (module_exists('os2dagsorden_esdh_provider')){
+        $committee_term = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee');
+        $node = os2dagsorden_esdh_provider_find_sofd_meeting($committee_term, $meeting['meeting_date_start'], $meeting['meeting_date_finish']);
+      } else {
+        // We create a new node object.
+        $node = new stdClass();
+      }
     }
 
     // Or any other content type you want.
@@ -176,8 +182,26 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     // Type import.
     $node->field_os2web_meetings_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
 
+    //Adding participants
+    if ($meeting['participants']){
+      $node->field_os2web_meetings_partic[LANGUAGE_NONE][0]['value'] = implode(variable_get('os2dagsorden_participants_delimeter', ', '), $meeting['participants']);
+      $node->field_os2web_meetings_partic[LANGUAGE_NONE][0]['format'] ='filtered_html';
+    }
+ 
+    //Adding cancelled participants
+    if ($meeting['participants_cancellation']){
+      $node->field_os2web_meetings_particcanl[LANGUAGE_NONE][0]['value'] = implode(variable_get('os2dagsorden_participants_delimeter', ', '), $meeting['participants_cancellation']);
+      $node->field_os2web_meetings_particcanl[LANGUAGE_NONE][0]['format'] ='filtered_html';
+    }
+
     // Make sure the committee term is created and get the term.
-    $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee')->tid;
+    if (!$committee_term)
+      $committee_term = _acadre_esdh_import_term($meeting['committee'], 'os2web_meetings_tax_committee');
+    $node->field_os2web_meetings_committee[LANGUAGE_NONE][0]['tid'] = $committee_term->tid;
+    if (module_exists('os2dagsorden_esdh_provider')){
+      os2dagsorden_esdh_provider_committee_add_subid($committee_term, $meeting['committee_id']);
+    }
+
     $node->field_os2web_meetings_location[LANGUAGE_NONE][0]['tid'] = _acadre_esdh_import_term($meeting['location'], 'os2web_meetings_tax_location')->tid;
     // Add QBrick info @FIXME This should be in a node_save hook in qbrick module.
     if (function_exists('_os2web_qbrick_get_movie_id')) {
@@ -266,14 +290,22 @@ function _os2web_esdh_provider_import_items($items) {
     $node->title = $item['title'];
     // Set some default values.
     node_object_prepare($node);
+    
+    if (module_exists('os2dagsorden_esdh_provider')){
+      $node = os2dagsorden_esdh_provider_bullet_add_number($node, $item['id']);
+    }
+
     if ($item['access'] === 'Lukket') {
-      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 0;
+      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 1;
+      if (module_exists('os2dagsorden_esdh_provider')){
+        $node = os2dagsorden_esdh_provider_process_closed_bullet($node, $item); 
+      }
       node_submit($node);
       node_save($node);
       $nids[] = $node->nid;
     }
     else {
-      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 1;
+      $node->field_os2web_meetings_bul_closed[LANGUAGE_NONE][]['value'] = 0;
       if (isset($item['movie_id']) && is_numeric($item["chapter"])) {
         $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['id'] = $item['movie_id'];
         $node->field_os2web_meetings_qbrickref[LANGUAGE_NONE][0]['seek'] = $item["chapter"];
@@ -293,6 +325,8 @@ function _os2web_esdh_provider_import_items($items) {
         if ($enclosure['access']) {
           if ($file = _os2web_esdh_provider_import_file($enclosure)) {
             $node->field_os2web_meetings_enclosures[LANGUAGE_NONE][] = (array) $file;
+            if (module_exists('os2dagsorden_esdh_provider'))
+              $node->field_os2web_meetings_attach[LANGUAGE_NONE][]['target_id'] = os2dagsorden_esdh_provider_process_enclosure($enclosure, $file);
           }
           else {
             watchdog('acadre MM', 'There was an error importing file %uri ', array('%uri' => $enclosure['uri']), WATCHDOG_ERROR);
