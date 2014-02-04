@@ -474,6 +474,9 @@ function _os2web_esdh_provider_import_file($file_meta) {
   $file->uid = 1;
   $file->status = FILE_STATUS_PERMANENT;
   $file = file_save($file);
+  
+  if (module_exists('os2dagsorden_file_conversion_manager'))
+    _os2dagsorden_file_conversion_manager_copy_file_to_convertion_dir($file->fid);
 
   // Schedule for PDF conversion
   // $convert = FALSE; // DEBUG.
