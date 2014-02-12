@@ -203,17 +203,23 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     $node->field_os2web_meetings_system_id[LANGUAGE_NONE][0]['value'] = $meeting['system_id'];
     // Type import.
     $node->field_os2web_meetings_type[LANGUAGE_NONE][0]['value'] = $meeting['type'];
-
+    //Adding default meeting category
+    $node->field_os2web_meetings_category[LANGUAGE_NONE][0]['value']=variable_get('os2dagsorden_default_meeting_cateroty','pol');
     //Adding participants
-    if ($meeting['participants']){
+    if (isset($meeting['participants'])){
       $node->field_os2web_meetings_partic[LANGUAGE_NONE][0]['value'] = implode(variable_get('os2dagsorden_participants_delimeter', ', '), $meeting['participants']);
       $node->field_os2web_meetings_partic[LANGUAGE_NONE][0]['format'] ='filtered_html';
     }
  
     //Adding cancelled participants
-    if ($meeting['participants_cancellation']){
+    if (isset($meeting['participants_cancellation'])){
       $node->field_os2web_meetings_particcanl[LANGUAGE_NONE][0]['value'] = implode(variable_get('os2dagsorden_participants_delimeter', ', '), $meeting['participants_cancellation']);
       $node->field_os2web_meetings_particcanl[LANGUAGE_NONE][0]['format'] ='filtered_html';
+    }
+    
+     //Adding comments
+   if (isset($meeting['description'])){
+      $node->field_os2web_meetings_comments[LANGUAGE_NONE][0]['value'] = $meeting['comments'];
     }
 
     // Make sure the committee term is created and get the term.
@@ -493,6 +499,9 @@ function _os2web_esdh_provider_import_file($file_meta) {
   $file->uid = 1;
   $file->status = FILE_STATUS_PERMANENT;
   $file = file_save($file);
+  
+  if (module_exists('os2web_pdf_conversion_manager'))
+    _os2web_pdf_conversion_manager_copy_file_to_convertion_dir($file->fid);
 
   // Schedule for PDF conversion
   // $convert = FALSE; // DEBUG.
