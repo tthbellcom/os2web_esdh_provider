@@ -154,7 +154,7 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
     /* The original field for title came from $meeting['title'];
      * This is a rewrite of the function to set the path automaticaly and with
      * custom data - sutch as date.
-     * skifter@bellcom.dk - 2013-04-14 / 2013-04-24 */
+     * skifterf@bellcom.dk - 2013-04-14 / 2013-04-24 */
 
     // Is the pathauto module loaded.
     if (module_exists('pathauto')) {
@@ -168,8 +168,10 @@ function _os2web_esdh_provider_import_meeting($meeting_id, $force = FALSE, &$con
       $node->title = $meeting['committee'] . ' - ' . date_format($my_date, $format);
 
       $alias = 'dagsorden/' . pathauto_cleanstring($node->title);
-      $source = (isset($node->nid)) ? 'node/' . $node->nid : '';
-      pathauto_alias_uniquify($alias, $source, $node->language);
+      if ($meeting['additional_agenda'] === 'true'){
+        $source = (isset($node->nid)) ? 'node/' . $node->nid : '';
+        pathauto_alias_uniquify($alias, $source, $node->language);
+      }
 
       // Adding the alias and setting pathauto to 0 for this content type.
       // otherwise we get 2 aliases.
