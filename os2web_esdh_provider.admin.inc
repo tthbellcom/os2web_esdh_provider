@@ -55,28 +55,23 @@ function _os2web_esdh_provider_status() {
       $queue_markup = '<h2>Meeting import: running!</h2>';
     }
 
-    $queue_full = variable_get('os2web_esdh_provider_queue');
-
     $queue_markup .= drupal_render(drupal_get_form('os2web_esdh_provider_queue_form'));
     $queue_markup .= '<h3>In queue</h3>';
 
     $queue_header = array(t('Publication id:'), t('uri'), t('Force'));
     $queue_rows = array();
 
-    foreach ($queue_full as $key => $queue) {
-      if (isset($queue['operations'])) {
-
-        foreach ($queue['operations'] as $operation) {
-          $id = $operation[1][0]['id'];
-          $uri = $operation[1][0]['uri'];
-          $operation[1][1] ? $force = 'True' : $force = '';
-
-          if (is_numeric($id)) {
-            $queue_rows[] = array($id, $uri, $force);
-          }
-        }
+    $queue = DrupalQueue::get('acadre_mm_import');
+    while($item = $queue->claimItem()) {
+      if (isset($item->data['meeting'])) {
+        $queue_rows[] = array(
+          $item->data['meeting']['id'],
+          $item->data['meeting']['uri'],
+          $item->data['force'],
+        );
       }
     }
+
     $queue_status .= '<br /><hr /><br />' . $queue_markup . theme('table', array(
         'header' => $queue_header,
         'rows' => $queue_rows,
@@ -112,7 +107,11 @@ function os2web_esdh_provider_queue_form($form_state) {
  */
 function os2web_esdh_provider_queue_form_submit(&$form, &$form_state) {
   // Empty queue.
-  variable_set('os2web_esdh_provider_queue', array());
+  $queue = DrupalQueue::get('acadre_mm_import');
+  while($item = $queue->claimItem()) {
+    $queue->deleteItem($item);
+  }
+
   drupal_set_message(t('Deleted queue'));
 }
 
@@ -211,8 +210,6 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
     return;
   }
 
-  $external_queue = variable_get('os2web_esdh_provider_queue_enabled', FALSE);
-
   $force = $form_state['values']['_meeting_force'] == 1;
   $focus = array_map('trim', explode(',', $form_state['values']['_meeting_id']));
   if (count($focus) === 1 && $focus[0] === '') {
@@ -225,32 +222,39 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
     'file' => drupal_get_path('module', 'os2web_esdh_provider') . '/os2web_esdh_provider.mmapi.inc',
     'init_message' => t('Scanner filer'),
   );
+
   $meetings = os2web_esdh_provider_invoke('mm', 'get_import_list');
-  foreach ($meetings as $meeting) {
-    if (empty($focus) || in_array($meeting['id'], $focus)) {
-      $batch['operations'][] = array(
-        '_os2web_esdh_provider_import_meeting',
-        array($meeting, $force));
+
+  if (variable_get('os2web_esdh_provider_queue_enabled', FALSE)) {
+    $queue = DrupalQueue::get('acadre_mm_import');
+
+    foreach ($meetings as $meeting) {
+      if (empty($focus) || in_array($meeting['id'], $focus)) {
+        $queue->createItem(array('meeting' => $meeting, 'force' => $force));
+      }
     }
-  }
-  if (os2web_esdh_provider_supports('mm', 'post_import_process')) {
-    $batch['operations'][] = array(
-      'os2web_esdh_provider_invoke',
-      array('mm', 'post_import_process'));
-  }
+    $queue->createItem(array('post_import_process' => TRUE));
 
-  variable_set('os2web_esdh_provider_last_mm_import', $current_timestamp);
-
-  if ($external_queue) {
-    $queue_full = variable_get('os2web_esdh_provider_queue', array());
-    $queue_full[time()] = $batch;
-
-    variable_set('os2web_esdh_provider_queue', $queue_full);
     drupal_goto('admin/config/os2web/esdh_provider');
   }
+  // Use normal batch processing if external queue is disabled.
   else {
+    foreach ($meetings as $meeting) {
+      if (empty($focus) || in_array($meeting['id'], $focus)) {
+        $batch['operations'][] = array(
+          '_os2web_esdh_provider_import_meeting',
+          array($meeting, $force));
+      }
+    }
+    if (os2web_esdh_provider_supports('mm', 'post_import_process')) {
+      $batch['operations'][] = array(
+        'os2web_esdh_provider_invoke',
+        array('mm', 'post_import_process'));
+    }
+
     batch_set($batch);
     // This isn't entirely neccesary, but needed to make the redirect work.
+    variable_set('os2web_esdh_provider_last_mm_import', $current_timestamp);
     batch_process('admin/config/os2web/esdh_provider');
   }
 }
