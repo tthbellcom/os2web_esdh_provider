@@ -25,6 +25,11 @@ See https://github.com/syddjurs/os2web/wiki for further instructions.
 
 This module can also be installed with drush make in your install profile.
 
+### External queue
+If external queue is selected from settings, `os2web_esdh_provider.queue.php`, must be
+executed using the servers crontab. This can be done using `drush php-script`, see
+<http://drush.ws/#php-script>
+
 Licence and copyright
 ---------------------
 OS2Web is Copyright (c) 2012 Syddjurs Kommune, Denmark

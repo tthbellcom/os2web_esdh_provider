@@ -11,6 +11,8 @@
 
 require_once 'os2web_esdh_provider.mmapi.inc';
 
+os2web_esdh_provider_queue_meetings();
+
 if (lock_acquire('os2web_esdh_provider_queue', 10000)) {
   $queue_full = variable_get('os2web_esdh_provider_queue');
 

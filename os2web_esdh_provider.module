@@ -56,7 +56,6 @@ function os2web_esdh_provider_menu() {
  * Implements hook_FORM_alter().
  */
 function os2web_esdh_provider_form_os2web_settings_settings_form_alter(&$form, &$form_state) {
-
   $form['os2web_esdh_provider'] = array(
     '#type' => 'fieldset',
     '#title' => 'Import',
@@ -185,50 +184,59 @@ function os2web_esdh_provider_node_delete($node) {
  * Will run import on every cron.
  */
 function os2web_esdh_provider_cron() {
+  // Added posibility to run import externally via
+  // "drush scr os2web_esdh_provider.queue.php"
+  if (variable_get('os2web_esdh_provider_queue_enabled', FALSE)) {
+    return;
+  }
+
   if (os2web_esdh_provider_has_api('mm')) {
-    // Added posibility to run import externally via
-    // "drush scr os2web_esdh_provider.queue.php"
-    $external_queue = variable_get('os2web_esdh_provider_queue_enabled', FALSE);
-
     $meetings = os2web_esdh_provider_invoke('mm', 'get_import_list');
-    $queue = DrupalQueue::get('acadre_mm_import');
 
+      $queue = DrupalQueue::get('acadre_mm_import');
     if ($queue->numberOfItems() == 0) {
 
       $current_timestamp = time();
       $last_mm_import_time = variable_get('os2web_esdh_provider_last_mm_import', FALSE);
-      $batch = array();
 
       foreach ($meetings as $meeting) {
         // Only import files newer than last cron job.
         if (!$last_mm_import_time || filemtime($meeting['uri']) > $last_mm_import_time) {
-
-          if ($external_queue) {
-            $batch['operations'][] = array(
-              '_os2web_esdh_provider_import_meeting',
-              array($meeting, FALSE));
-          }
-          else {
-            $queue->createItem(array('meeting' => $meeting, 'force' => FALSE));
-          }
+          $queue->createItem(array('meeting' => $meeting, 'force' => FALSE));
         }
       }
-
-      if ($external_queue) {
-        if (!empty($batch)) {
-          $queue_full = variable_get('os2web_esdh_provider_queue', array());
-          $queue_full[time()] = $batch;
-
-          variable_set('os2web_esdh_provider_queue', $queue_full);
-        }
-      }
-      else {
-        $queue->createItem(array('post_import_process' => TRUE));
-      }
-
+      $queue->createItem(array('post_import_process' => TRUE));
       variable_set('os2web_esdh_provider_last_mm_import', $current_timestamp);
     }
   }
+}
+
+/**
+ * Worker function that queues meetings for external import.
+ */
+function os2web_esdh_provider_queue_meetings() {
+  $meetings = os2web_esdh_provider_invoke('mm', 'get_import_list');
+
+  $batch = array();
+  $last_mm_import_time = variable_get('os2web_esdh_provider_last_mm_import', FALSE);
+
+  foreach ($meetings as $meeting) {
+    // Only import files newer than last cron job.
+    if (!$last_mm_import_time || filemtime($meeting['uri']) > $last_mm_import_time) {
+      $batch['operations'][] = array(
+        '_os2web_esdh_provider_import_meeting',
+        array($meeting, FALSE));
+    }
+  }
+
+  if (!empty($batch)) {
+    $queue_full = variable_get('os2web_esdh_provider_queue', array());
+    $queue_full[time()] = $batch;
+
+    variable_set('os2web_esdh_provider_queue', $queue_full);
+  }
+
+  variable_set('os2web_esdh_provider_last_mm_import', time());
 }
 
 /**

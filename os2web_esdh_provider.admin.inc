@@ -45,6 +45,8 @@ function _os2web_esdh_provider_status() {
     $watchdog_table = theme('table', array('header' => $watchdog_head, 'rows' => $watchdog_rows));
   }
 
+  $queue_status = '';
+
   if (variable_get('os2web_esdh_provider_queue_enabled', FALSE)) {
     // Status for external meeting importer.
     $queue_markup = '<h2>Meeting import: currently not running</h2>';
@@ -75,11 +77,13 @@ function _os2web_esdh_provider_status() {
         }
       }
     }
-    $queue_status .= '<hr />' . $queue_markup . theme('table', array(
+    $queue_status .= '<br /><hr /><br />' . $queue_markup . theme('table', array(
         'header' => $queue_header,
         'rows' => $queue_rows,
         'empty' => t('Queue is empty'),
       ));
+
+    $queue_status .= '<br /><hr /><br />';
   }
 
   $import_form = drupal_get_form('os2web_esdh_provider_import_form');
@@ -87,7 +91,7 @@ function _os2web_esdh_provider_status() {
       theme('table', array('header' => $head, 'rows' => $rows)) .
       '<h3>' . t('Last agenda import was successfully run at %time', array('%time' => format_date(variable_get('os2web_esdh_provider_last_import', 0)))) . '</h3>' .
       '<h3>' . t('Last import job was run at %time', array('%time' => format_date(variable_get('os2web_esdh_provider_last_mm_import', 0)))) . '</h3>' .
-      drupal_render($import_form) . $watchdog_table . $queue_status;
+      drupal_render($import_form) . $queue_status . $watchdog_table;
 }
 
 /**
