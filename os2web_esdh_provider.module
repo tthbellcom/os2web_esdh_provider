@@ -12,7 +12,16 @@
  * Implements hook_menu().
  */
 function os2web_esdh_provider_menu() {
-  $items['admin/config/os2web/esdh_provider/importconfirm'] = array(
+  $items['admin/config/os2web_esdh_provider'] = array(
+    'title' => 'OS2Web ESDH Provider',
+    'position' => 'right',
+    'weight' => -15,
+    'access arguments' => array('administer os2web'),
+    'page callback' => 'system_admin_menu_block_page',
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/os2web_esdh_provider/importconfirm'] = array(
     'title' => 'Confirm reimport',
     'access arguments' => array('administer os2web'),
     'page callback' => 'drupal_get_form',
@@ -20,11 +29,22 @@ function os2web_esdh_provider_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'os2web_esdh_provider.admin.inc',
   );
-  $items['admin/config/os2web/esdh_provider'] = array(
-    'title' => 'ESDH status',
+  $items['admin/config/os2web_esdh_provider/status'] = array(
+    'title' => 'Status',
+    'description' => 'Overview page for OS2Web ESDH Provider',
     'access arguments' => array('administer os2web'),
     'page callback' => '_os2web_esdh_provider_status',
-    'type' => MENU_LOCAL_TASK,
+    'weight' => -10,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'os2web_esdh_provider.admin.inc',
+  );
+  $items['admin/config/os2web_esdh_provider/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Configure OS2Web ESDH Provider',
+    'access arguments' => array('administer os2web'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_os2web_esdh_provider_settings'),
+    'type' => MENU_NORMAL_ITEM,
     'file' => 'os2web_esdh_provider.admin.inc',
   );
   $items['node/%/info'] = array(
@@ -50,19 +70,6 @@ function os2web_esdh_provider_menu() {
     'file' => 'os2web_esdh_provider.cpapi.inc',
   );
   return $items;
-}
-
-/**
- * Implements hook_FORM_alter().
- */
-function os2web_esdh_provider_form_os2web_settings_settings_form_alter(&$form, &$form_state) {
-  // MM configuration.
-  $form['meetings']['os2web_meetings_import_service_ip'] = array(
-    '#type' => 'textfield',
-    '#title' => 'IP addresser der kan udløse import',
-    '#description' => 'Komma separeret liste af ip-addresser der kan tilgå <em>admin/os2web/import/<ID></em>.',
-    '#default_value' => variable_get('os2web_meetings_import_service_ip', ip_address()),
-  );
 }
 
 /**

@@ -1,10 +1,24 @@
 <?php
-
 /**
  * @file
  * This file implements administration menus and functionality for
  * the provider module.
  */
+
+/**
+ * Form callback for settings.
+ */
+function _os2web_esdh_provider_settings() {
+  // MM configuration.
+  $form['meetings']['os2web_meetings_import_service_ip'] = array(
+    '#type' => 'textfield',
+    '#title' => 'IP addresser der kan udløse import',
+    '#description' => 'Komma separeret liste af ip-addresser der kan tilgå <em>admin/os2web/import/<ID></em>.',
+    '#default_value' => variable_get('os2web_meetings_import_service_ip', ip_address()),
+  );
+
+  return system_settings_form($form);
+}
 
 /**
  * Page callback. Displays status page.
@@ -100,7 +114,7 @@ function os2web_esdh_provider_import_form() {
 function os2web_esdh_provider_import_form_submit($form, &$form_state) {
   variable_set('os2web_esdh_provider_debug_info', $form_state['values']['debug_info']);
   variable_set('os2web_esdh_provider_debug_email', $form_state['values']['debug_email']);
-  drupal_goto('admin/config/os2web/esdh_provider/importconfirm', array(
+  drupal_goto('admin/config/os2web_esdh_provider/importconfirm', array(
     'query' => array(
       'id' => $form_state['values']['focus'],
       'force' => $form_state['values']['force'],
@@ -137,7 +151,7 @@ function _os2web_esdh_provider_status_confirm($form, &$form_state) {
     $msg .= t('Only new nodes will be imported, existing data is preserved.</p>');
   }
   $msg .= t('<p>Are you sure you want to run this import?</p>');
-  return confirm_form($form, t('Import meetings'), isset($_GET['destination']) ? $_GET['destination'] : "admin/config/os2web/esdh_provider", $msg, t('Run'), t('Cancel'));
+  return confirm_form($form, t('Import meetings'), isset($_GET['destination']) ? $_GET['destination'] : "admin/config/os2web_esdh_provider/status", $msg, t('Run'), t('Cancel'));
 }
 
 /**
@@ -175,5 +189,5 @@ function _os2web_esdh_provider_status_confirm_submit($form, &$form_state) {
   }
   batch_set($batch);
   // This isn't entirely neccesary, but needed to make the redirect work.
-  batch_process('admin/config/os2web/esdh_provider');
+  batch_process('admin/config/os2web_esdh_provider/status');
 }
